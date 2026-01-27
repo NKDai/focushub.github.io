@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Focus Hub</title>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, sans-serif }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: linear-gradient(120deg, #667eea, #764ba2, #6dd5ed);
+      background-size: 300% 300%;
+      animation: wave 12s ease-in-out infinite
+    }
+
+    @keyframes wave {
+      0% { background-position: 0% 50% }
+      50% { background-position: 100% 50% }
+      100% { background-position: 0% 50% }
+    }
+
+    .card {
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 32px;
+      width: 100%;
+      max-width: 440px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3)
+    }
+
+    h1 { margin: 0 0 8px; font-size: 28px }
+    p { opacity: 0.9; margin-bottom: 20px }
+
+    .buttons, .pomodoro-buttons {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 20px
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 15px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #00c6ff, #0072ff);
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s ease, box-shadow 0.15s ease
+    }
+
+    button::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(120deg, transparent, rgba(255,255,255,0.6), transparent);
+      transition: left 0.5s ease
+    }
+
+    button:hover::after {
+      left: 100%
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 18px rgba(255,255,255,0.35)
+    }
+
+    button.secondary {
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+      color: #222
+    }
+
+    button.control {
+      background: linear-gradient(135deg, #43e97b, #38f9d7);
+      color: #123
+    }
+
+    .timer {
+      font-size: 38px;
+      font-weight: 600;
+      margin: 12px 0
+    }
+
+    .status { opacity: 0.85; margin-bottom: 8px }
+
+    footer { font-size: 13px; opacity: 0.7 }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Tập trung & Hành động</h1>
+    <p>Một phiên tập trung đúng cách còn giá trị hơn nhiều giờ xao nhãng.</p>
+
+    <div class="buttons">
+      <button onclick="openZalo()">Mở Zalo</button>
+      <button class="secondary" onclick="openChatGPT()">Mở ChatGPT</button>
+    </div>
+
+    <div class="status" id="status">Sẵn sàng tập trung</div>
+    <div class="timer" id="timer">00:00</div>
+
+    <div class="pomodoro-buttons">
+      <button onclick="startSession(25)">Pomodoro 25 phút</button>
+      <button onclick="startSession(45)">Pomodoro 45 phút</button>
+      <button onclick="startSession(60)">Pomodoro 60 phút</button>
+    </div>
+
+    <button class="control" onclick="togglePause()">Tạm dừng / Tiếp tục</button>
+
+    <p>Số Pomodoro đã hoàn thành: <strong id="count">0</strong></p>
+
+    <footer>Giữ nhịp. Giữ tập trung.</footer>
+  </div>
+
+  <audio id="sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+  <script>
+    function openZalo() {
+      window.open('https://chat.zalo.me', '_blank')
+    }
+
+    function openChatGPT() {
+      const prompt = encodeURIComponent('Hãy giúp tôi tập trung làm việc trong 25 phút tới, chia nhỏ nhiệm vụ và động viên tôi')
+      window.open('https://chat.openai.com/?prompt=' + prompt, '_blank')
+    }
+
+    let time = 0
+    let interval = null
+    let paused = false
+    let mode = 'idle'
+    let pomodoroCount = 0
+
+    const timerEl = document.getElementById('timer')
+    const statusEl = document.getElementById('status')
+    const countEl = document.getElementById('count')
+    const sound = document.getElementById('sound')
+
+    function updateTimer() {
+      const m = String(Math.floor(time / 60)).padStart(2, '0')
+      const s = String(time % 60).padStart(2, '0')
+      timerEl.textContent = `${m}:${s}`
+    }
+
+    function startSession(minutes) {
+      clearInterval(interval)
+      time = minutes * 60
+      paused = false
+      mode = 'work'
+      statusEl.textContent = `Đang tập trung ${minutes} phút`
+      updateTimer()
+      runTimer(minutes)
+    }
+
+    function runTimer(workMinutes) {
+      interval = setInterval(() => {
+        if (paused) return
+        time--
+        updateTimer()
+        if (time <= 0) {
+          clearInterval(interval)
+          sound.play()
+          if (mode === 'work') {
+            startBreak(workMinutes)
+          } else {
+            pomodoroCount++
+            countEl.textContent = pomodoroCount
+            startSession(workMinutes)
+          }
+        }
+      }, 1000)
+    }
+
+    function startBreak(workMinutes) {
+      const breakMinutes = workMinutes === 25 ? 5 : workMinutes === 45 ? 10 : 15
+      time = breakMinutes * 60
+      mode = 'break'
+      statusEl.textContent = `Nghỉ giải lao ${breakMinutes} phút`
+      updateTimer()
+      runTimer(workMinutes)
+    }
+
+    function togglePause() {
+      paused = !paused
+      statusEl.textContent = paused ? 'Đã tạm dừng' : mode === 'break' ? 'Đang nghỉ' : 'Đang tập trung'
+    }
+  </script>
+</body>
+</html>
