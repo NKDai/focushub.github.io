@@ -16,7 +16,8 @@
       color: #fff;
       background: linear-gradient(120deg, #667eea, #764ba2, #6dd5ed);
       background-size: 300% 300%;
-      animation: wave 12s ease-in-out infinite
+      animation: wave 12s ease-in-out infinite;
+      transition: background 0.6s ease
     }
 
     @keyframes wave {
@@ -25,6 +26,38 @@
       100% { background-position: 0% 50% }
     }
 
+    /* ===== THEME BUTTONS ===== */
+    .theme-buttons {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 999
+    }
+
+    .theme-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3)
+    }
+
+    .theme-1 {
+      background: linear-gradient(135deg, #667eea, #00c6ff)
+    }
+
+    .theme-2 {
+      background: linear-gradient(135deg, #18A5A7, #B6C0C5)
+    }
+
+    .theme-3 {
+      background: linear-gradient(135deg, #43e97b, #f7971e)
+    }
+
+    /* ===== CARD ===== */
     .card {
       background: rgba(0,0,0,0.35);
       backdrop-filter: blur(12px);
@@ -95,11 +128,18 @@
     }
 
     .status { opacity: 0.85; margin-bottom: 8px }
-
     footer { font-size: 13px; opacity: 0.7 }
   </style>
 </head>
 <body>
+
+  <!-- THEME BUTTONS -->
+  <div class="theme-buttons">
+    <button class="theme-btn theme-1" onclick="setTheme(1)"></button>
+    <button class="theme-btn theme-2" onclick="setTheme(2)"></button>
+    <button class="theme-btn theme-3" onclick="setTheme(3)"></button>
+  </div>
+
   <div class="card">
     <h1>Tập trung & Hành động</h1>
     <p>Một phiên tập trung đúng cách còn giá trị hơn nhiều giờ xao nhãng.</p>
@@ -121,13 +161,23 @@
     <button class="control" onclick="togglePause()">Tạm dừng / Tiếp tục</button>
 
     <p>Số Pomodoro đã hoàn thành: <strong id="count">0</strong></p>
-
     <footer>Giữ nhịp. Giữ tập trung.</footer>
   </div>
 
   <audio id="sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
   <script>
+    function setTheme(id) {
+      const body = document.body
+      if (id === 1)
+        body.style.background = 'linear-gradient(120deg, #667eea, #00c6ff, #764ba2)'
+      if (id === 2)
+        body.style.background = 'linear-gradient(120deg, #18A5A7, #B6C0C5, #18A5A7)'
+      if (id === 3)
+        body.style.background = 'linear-gradient(120deg, #43e97b, #f7971e, #38f9d7)'
+      body.style.backgroundSize = '300% 300%'
+    }
+
     function openZalo() {
       window.open('https://chat.zalo.me', '_blank')
     }
@@ -137,64 +187,75 @@
       window.open('https://chat.openai.com/?prompt=' + prompt, '_blank')
     }
 
-    let time = 0
+    let endTime = 0
     let interval = null
     let paused = false
+    let pauseTime = 0
     let mode = 'idle'
     let pomodoroCount = 0
+    let currentWorkMinutes = 0
 
     const timerEl = document.getElementById('timer')
     const statusEl = document.getElementById('status')
     const countEl = document.getElementById('count')
     const sound = document.getElementById('sound')
 
-    function updateTimer() {
-      const m = String(Math.floor(time / 60)).padStart(2, '0')
-      const s = String(time % 60).padStart(2, '0')
+    function updateTimer(seconds) {
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0')
+      const s = String(seconds % 60).padStart(2, '0')
       timerEl.textContent = `${m}:${s}`
     }
 
     function startSession(minutes) {
       clearInterval(interval)
-      time = minutes * 60
+      currentWorkMinutes = minutes
       paused = false
       mode = 'work'
+      endTime = Date.now() + minutes * 60 * 1000
       statusEl.textContent = `Đang tập trung ${minutes} phút`
-      updateTimer()
-      runTimer(minutes)
+      runTimer()
     }
 
-    function runTimer(workMinutes) {
+    function startBreak() {
+      const breakMinutes = currentWorkMinutes === 25 ? 5 : currentWorkMinutes === 45 ? 10 : 15
+      mode = 'break'
+      endTime = Date.now() + breakMinutes * 60 * 1000
+      statusEl.textContent = `Nghỉ giải lao ${breakMinutes} phút`
+      runTimer()
+    }
+
+    function runTimer() {
+      clearInterval(interval)
       interval = setInterval(() => {
         if (paused) return
-        time--
-        updateTimer()
-        if (time <= 0) {
+
+        const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000))
+        updateTimer(remaining)
+
+        if (remaining === 0) {
           clearInterval(interval)
           sound.play()
-          if (mode === 'work') {
-            startBreak(workMinutes)
-          } else {
+
+          if (mode === 'work') startBreak()
+          else {
             pomodoroCount++
             countEl.textContent = pomodoroCount
-            startSession(workMinutes)
+            startSession(currentWorkMinutes)
           }
         }
       }, 1000)
     }
 
-    function startBreak(workMinutes) {
-      const breakMinutes = workMinutes === 25 ? 5 : workMinutes === 45 ? 10 : 15
-      time = breakMinutes * 60
-      mode = 'break'
-      statusEl.textContent = `Nghỉ giải lao ${breakMinutes} phút`
-      updateTimer()
-      runTimer(workMinutes)
-    }
-
     function togglePause() {
-      paused = !paused
-      statusEl.textContent = paused ? 'Đã tạm dừng' : mode === 'break' ? 'Đang nghỉ' : 'Đang tập trung'
+      if (!paused) {
+        paused = true
+        pauseTime = Date.now()
+        statusEl.textContent = 'Đã tạm dừng'
+      } else {
+        paused = false
+        endTime += Date.now() - pauseTime
+        statusEl.textContent = mode === 'break' ? 'Đang nghỉ' : 'Đang tập trung'
+      }
     }
   </script>
 </body>
