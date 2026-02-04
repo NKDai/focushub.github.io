@@ -183,8 +183,8 @@
     }
 
     function openChatGPT() {
-      const prompt = encodeURIComponent('Hãy giúp tôi tập trung làm việc trong 25 phút tới, chia nhỏ nhiệm vụ và động viên tôi')
-      window.open('https://chat.openai.com/?prompt=list' + prompt, '_blank')
+      const prompt = encodeURIComponent('list')
+      window.open('https://chat.openai.com/?prompt=' + prompt, '_blank')
     }
 
     let endTime = 0
@@ -260,4 +260,5 @@
   </script>
 </body>
 </html>
+
 
