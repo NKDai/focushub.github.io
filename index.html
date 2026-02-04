@@ -45,16 +45,24 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.3)
     }
 
-    .theme-1 {
-      background: linear-gradient(135deg, #667eea, #00c6ff)
+    .theme-1 { background: linear-gradient(135deg, #667eea, #00c6ff) }
+    .theme-2 { background: linear-gradient(135deg, #18A5A7, #B6C0C5) }
+    .theme-3 { background: linear-gradient(135deg, #43e97b, #f7971e) }
+
+    /* ===== COPY BUTTON (KHÔNG PHÁ BỐ CỤC) ===== */
+    .copy-container {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      z-index: 999
     }
 
-    .theme-2 {
-      background: linear-gradient(135deg, #18A5A7, #B6C0C5)
-    }
-
-    .theme-3 {
-      background: linear-gradient(135deg, #43e97b, #f7971e)
+    .copy-container button {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      padding: 0;
+      font-size: 18px;
     }
 
     /* ===== CARD ===== */
@@ -102,9 +110,7 @@
       transition: left 0.5s ease
     }
 
-    button:hover::after {
-      left: 100%
-    }
+    button:hover::after { left: 100% }
 
     button:hover {
       transform: translateY(-2px);
@@ -121,12 +127,7 @@
       color: #123
     }
 
-    .timer {
-      font-size: 38px;
-      font-weight: 600;
-      margin: 12px 0
-    }
-
+    .timer { font-size: 38px; font-weight: 600; margin: 12px 0 }
     .status { opacity: 0.85; margin-bottom: 8px }
     footer { font-size: 13px; opacity: 0.7 }
   </style>
@@ -138,6 +139,11 @@
     <button class="theme-btn theme-1" onclick="setTheme(1)"></button>
     <button class="theme-btn theme-2" onclick="setTheme(2)"></button>
     <button class="theme-btn theme-3" onclick="setTheme(3)"></button>
+  </div>
+
+  <!-- COPY BUTTON -->
+  <div class="copy-container">
+    <button onclick="copyTaskPrompt()">📋</button>
   </div>
 
   <div class="card">
@@ -167,6 +173,19 @@
   <audio id="sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
   <script>
+    function copyTaskPrompt() {
+      const text = `Hãy trở thành người quản lý công việc của tôi.
+Mỗi công việc sẽ được đánh số.
+
+Khi tôi thêm công việc mới tôi sẽ ghi với cú pháp : new <số>. <công việc>
+Khi tôi làm xong công việc tôi sẽ ghi với cú pháp : done <số>
+Khi tôi muốn xem danh sách công việc thì tôi sẽ ghi với cú pháp : list
+
+Nhiệm vụ của bạn là ghi nhớ, cập nhật, xóa và trình bày danh sách công việc của tôi.
+Ngoài ra, trong tương lai tôi sẽ custom thêm những công việc quản lý khác.`
+      navigator.clipboard.writeText(text)
+    }
+
     function setTheme(id) {
       const body = document.body
       if (id === 1)
@@ -228,14 +247,11 @@
       clearInterval(interval)
       interval = setInterval(() => {
         if (paused) return
-
         const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000))
         updateTimer(remaining)
-
         if (remaining === 0) {
           clearInterval(interval)
           sound.play()
-
           if (mode === 'work') startBreak()
           else {
             pomodoroCount++
@@ -260,5 +276,3 @@
   </script>
 </body>
 </html>
-
-
